@@ -12,6 +12,7 @@ mod nb {
                 Error::Parity => ErrorKind::Parity,
                 Error::Noise => ErrorKind::Noise,
                 Error::Other => ErrorKind::Other,
+                Error::Idle => ErrorKind::Other,
             }
         }
     }

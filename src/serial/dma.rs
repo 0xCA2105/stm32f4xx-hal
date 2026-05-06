@@ -61,6 +61,14 @@ pub trait SerialReadDMA {
     ) -> nb::Result<(), super::Error>;
 }
 
+pub trait SerialReadDMATilIdle {
+    unsafe fn read_dma_til_idle(
+        &mut self,
+        buf: &mut [u8],
+        callback: Option<SerialCompleteCallback>,
+    ) -> nb::Result<(), super::Error>;
+}
+
 /// Trait with handle interrupts functions
 pub trait SerialHandleIT {
     fn handle_dma_interrupt(&mut self);
@@ -353,6 +361,14 @@ where
         self.hal_serial.tx.usart.enable_error_interrupt_generation();
     }
 
+    fn enable_idle_interrupt_generation(&mut self) {
+        self.hal_serial.rx.usart.listen_idle();
+    }
+
+    fn disable_idle_interrupt_generation(&mut self) {
+        self.hal_serial.rx.usart.unlisten_idle();
+    }
+
     fn disable_error_interrupt_generation(&mut self) {
         self.hal_serial
             .tx
@@ -361,6 +377,7 @@ where
     }
 
     fn finish_transfer_with_result(&mut self, result: Result<(), Error>) {
+        self.disable_idle_interrupt_generation();
         self.disable_error_interrupt_generation();
 
         self.call_callback_once(result);
@@ -569,6 +586,34 @@ where
         callback: Option<SerialCompleteCallback>,
     ) -> nb::Result<(), super::Error> {
         self.enable_error_interrupt_generation();
+        let static_buf: &'static mut [u8] = transmute(buf);
+        self.rx.create_transfer(static_buf);
+        self.callback = callback;
+
+        // Start DMA processing
+        self.rx.rx_transfer.as_mut().unwrap().start(|_| {});
+
+        Ok(())
+    }
+}
+
+impl<Serial_: Instance, TX_TRANSFER, RX_STREAM, const RX_CH: u8> SerialReadDMATilIdle
+    for SerialDma<Serial_, TX_TRANSFER, RxDMA<Serial_, RX_STREAM, RX_CH>>
+where
+    RX_STREAM: Stream,
+    ChannelX<RX_CH>: Channel,
+    Rx<Serial_>: DMASet<RX_STREAM, RX_CH, PeripheralToMemory>,
+
+    TX_TRANSFER: DMATransfer<&'static [u8]>,
+{
+    unsafe fn read_dma_til_idle(
+        &mut self,
+        buf: &mut [u8],
+        callback: Option<SerialCompleteCallback>,
+    ) -> nb::Result<(), super::Error> {
+        self.enable_idle_interrupt_generation();
+        self.enable_error_interrupt_generation();
+
         let static_buf: &'static mut [u8] = transmute(buf);
         self.rx.create_transfer(static_buf);
         self.callback = callback;

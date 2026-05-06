@@ -55,6 +55,8 @@ pub enum Error {
     Parity,
     /// Serial line is too noisy to read valid data.
     Noise,
+    /// Line went idle
+    Idle,
     /// A different error occurred. The original error may contain more information.
     Other,
 }

@@ -144,6 +144,8 @@ pub trait RegisterBlockImpl: UartRB {
             Err(Error::FrameFormat)
         } else if sr.pe().bit_is_set() {
             Err(Error::Parity)
+        } else if sr.idle().bit_is_set() {
+            Err(Error::Idle)
         } else {
             Ok(())
         }
