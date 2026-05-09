@@ -10,6 +10,7 @@ use crate::ReadFlags;
 
 use nb;
 
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Error {
     SerialError(super::Error),

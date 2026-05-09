@@ -43,6 +43,7 @@ use crate::dma::{
 /// This represents a common set of serial operation errors. HAL implementations are
 /// free to define more specific or additional error types. However, by providing
 /// a mapping to these common serial errors, generic code can still react to them.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub enum Error {
